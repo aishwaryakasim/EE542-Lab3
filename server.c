@@ -79,19 +79,20 @@ int main(int argc, char **argv)
 
 		if ( (flname_recv[0] != '\0')) {
 		printf("Requested File Name = %s\n", flname_recv);
-
-			if (access(flname_recv, F_OK) == 0){			//Check if file exist
-					
+			//Check if file exists
+			if (access(flname_recv, F_OK) == 0){			
+				//Size of the file	
 				stat(flname_recv, &st);
-				f_size = st.st_size;			//Size of the file
+				f_size = st.st_size;			
 
 				t_out.tv_sec = 0;			
 				t_out.tv_usec = 250000;
 				setsockopt(serverd, SOL_SOCKET, SO_RCVTIMEO, (char *)&t_out, sizeof(struct timeval));   //Setting timeout option for receiving ACK
 
-				fptr = fopen(flname_recv, "rb");                       
+				fptr = fopen(flname_recv, "rb");
+				//Total number of frames to be sent
 				if ((f_size % BUF_SIZE) != 0)
-					frame_count = (f_size / BUF_SIZE) + 1;				//Total number of frames to be sent
+					frame_count = (f_size / BUF_SIZE) + 1;				
 				else
 					frame_count = (f_size / BUF_SIZE);
 					
@@ -99,27 +100,30 @@ int main(int argc, char **argv)
 				fprintf(stdout, "Time Stamp of first bit sent = %lu \n", (unsigned long)time(NULL)); 
 				sendto(serverd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));	//Send file size to client
 				recvfrom(serverd, &(ack_num), sizeof(ack_num), 0, (struct sockaddr *) &cl_addr, (socklen_t *) &length); 
-
-				while (ack_num != frame_count){		//Check for the acknowledgement
+				//Check for the acknowledgement
+				while (ack_num != frame_count){		
 				
 					//Keep retrying until the ack matches
 					sendto(serverd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr)); 
 					while (recvfrom(serverd, &(ack_num), sizeof(ack_num), 0, (struct sockaddr *) &cl_addr, (socklen_t *) &length) < 0){
-				            sendto(serverd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));		//If timeout on receiving ACK, retransmit the frame
+					    //If timeout on receiving ACK, retransmit the frame
+				            sendto(serverd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));		
 					}
 				}
 				int i = 1;
-            	bool flag=true;
-            	ack_num=0;
+            			bool flag=true;
+            			ack_num=0;
 				    while(ack_num !=frame_count){
 				            memset(&frame, 0, sizeof(frame));
 				            frame.SeqID = i;
 				            if(flag)
-				                frame.length = fread(frame.data, 1, BUF_SIZE, fptr);
-				            sendto(serverd, &(frame), sizeof(frame), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));		//send the frame
-							while (recvfrom(serverd, &(ack_num), sizeof(ack_num), 0, (struct sockaddr *) &cl_addr, (socklen_t *) &length) < 0){
-				            sendto(serverd, &(frame), sizeof(frame), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));
-							}
+				            frame.length = fread(frame.data, 1, BUF_SIZE, fptr);
+					    //send the frame
+				            sendto(serverd, &(frame), sizeof(frame), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));		
+					    
+					    while (recvfrom(serverd, &(ack_num), sizeof(ack_num), 0, (struct sockaddr *) &cl_addr, (socklen_t *) &length) < 0){
+				            		sendto(serverd, &(frame), sizeof(frame), 0, (struct sockaddr *) &cl_addr, sizeof(cl_addr));
+					    }
 
 				            if(ack_num == frame.SeqID){
 				                i++;
@@ -131,10 +135,10 @@ int main(int argc, char **argv)
 
 				            if (frame_count == ack_num){
 				                printf("File sent\n");
-								exit(1);
+						exit(1);
 				            }
-				        }
-				fclose(fptr);
+				     }
+			fclose(fptr);
 			}
 		}
 	}
