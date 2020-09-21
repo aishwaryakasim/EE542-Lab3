@@ -14,7 +14,8 @@
 #include <dirent.h>
 #include <time.h>
 
-#define BUFFER_SIZE 61000	//Max size of data in a single frame
+//Max size of data in a single frame
+#define BUFFER_SIZE 61000	
 
 //A frame packet with sequence id, length of frame and the content of file
  struct frame_st {
@@ -56,8 +57,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-
-	/*Clear all the data buffer and structure*/
 	memset(ack_send, 0, sizeof(ack_send));
 	memset(&to_addr, 0, sizeof(to_addr));
 	memset(&from_addr, 0, sizeof(from_addr));
@@ -89,25 +88,28 @@ int main(int argc, char **argv)
 			
 			t_out.tv_sec = 0;
 			t_out.tv_usec = 0;
-            setsockopt(clientd, SOL_SOCKET, SO_RCVTIMEO, (char *)&t_out, sizeof(struct timeval)); 	//Disabling the timeout option on client side
-			recvfrom(clientd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &from_addr, (socklen_t *) &length); //Informing user the size of file by total frame
+			//Disabling the timeout option on client side
+            		setsockopt(clientd, SOL_SOCKET, SO_RCVTIMEO, (char *)&t_out, sizeof(struct timeval)); 
+			//Informing user the size of file by total frame
+			recvfrom(clientd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &from_addr, (socklen_t *) &length); 
 
 			if (frame_count > 0) {
 				sendto(clientd, &(frame_count), sizeof(frame_count), 0, (struct sockaddr *) &to_addr, sizeof(to_addr)); //Acknowledge the receipt of file size
 				printf("Total Frames to be received from server %ld with each frame containing 61K Bytes data\n", frame_count);
 			}
 				fptr = fopen(flname, "wb");
-				//Recieve the frames sequentially and send an acknowledgement for each frame received
+				//Receive the frames sequentially and send an acknowledgement for each frame received
 				int i=1;
 				while (frame.SeqID !=frame_count){
 					memset(&frame, 0, sizeof(frame));
-					recvfrom(clientd, &(frame), sizeof(frame), 0, (struct sockaddr *) &from_addr, (socklen_t *) &length);  //Recieve the frame
+					recvfrom(clientd, &(frame), sizeof(frame), 0, (struct sockaddr *) &from_addr, (socklen_t *) &length); 
 					if (frame.SeqID == frame_count)
 					{
 						fprintf(stdout, " Time Stamp of last bit received = %lu\n", (unsigned long)time(NULL));
 						printf("File received\n");
 					}
-					sendto(clientd, &(frame.SeqID), sizeof(frame.SeqID), 0, (struct sockaddr *) &to_addr, sizeof(to_addr));	//Send Acknowledgement for each frame received successfully
+					//Send Acknowledgement for each frame received successfully
+					sendto(clientd, &(frame.SeqID), sizeof(frame.SeqID), 0, (struct sockaddr *) &to_addr, sizeof(to_addr));	
 					//Write content into file only if correct frame received
 					 if (frame.SeqID == i){
 					 	i++;
